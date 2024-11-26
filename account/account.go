@@ -1,7 +1,6 @@
 package account
 
 import (
-	"encoding/json"
 	"errors"
 	"math/rand/v2"
 	"net/url"
@@ -18,16 +17,10 @@ type Account struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (acc *Account) OutputPassword() {
+func (acc *Account) Output() {
+	color.Cyan(acc.Login)
 	color.Cyan(acc.Password)
-}
-
-func (acc *Account) ToBytes() ([]byte, error) {
-	file, err := json.Marshal(acc)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
+	color.Cyan(acc.Url)
 }
 
 func (acc *Account) generatePassword(n int) {
