@@ -1,10 +1,12 @@
 package account
 
 import (
+	"demo/password/encrypter"
 	"demo/password/output"
 	"encoding/json"
-	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 type ByteReader interface {
@@ -27,10 +29,11 @@ type Vault struct {
 
 type VaultWithDb struct {
 	Vault
-	db Db
+	db  Db
+	enc encrypter.Encrypter
 }
 
-func NewVault(db Db) *VaultWithDb {
+func NewVault(db Db, enc encrypter.Encrypter) *VaultWithDb {
 	file, err := db.Read()
 
 	if err != nil {
@@ -39,34 +42,41 @@ func NewVault(db Db) *VaultWithDb {
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}
 	}
 
+	data := enc.Decrypt(file)
+
 	var vault Vault
-	err = json.Unmarshal(file, &vault)
+	err = json.Unmarshal(data, &vault)
 	if err != nil {
-		output.PrintError("Не удалось разобрать файл data.json")
+		output.PrintError("Не удалось разобрать файл data.vault")
 
 		return &VaultWithDb{
 			Vault: Vault{
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}
 	}
+
+	color.Cyan("Найдено %d аккаунтов", len(vault.Accounts))
 
 	return &VaultWithDb{
 		Vault: vault,
 		db:    db,
+		enc:   enc,
 	}
 }
 
-func (vault *VaultWithDb) FindAccountsByUrl(query string) []Account {
+func (vault *VaultWithDb) FindAccounts(query string, checker func(Account, string) bool) []Account {
 	var accounts []Account
 	for _, account := range vault.Accounts {
-		isMatched := strings.Contains(account.Url, query)
+		isMatched := checker(account, query)
 		if isMatched {
 			accounts = append(accounts, account)
 		}
@@ -109,5 +119,6 @@ func (vault *VaultWithDb) save() {
 	if err != nil {
 		output.PrintError("Не удалось преоброзовать")
 	}
-	vault.db.Write(data)
+	encryptedData := vault.enc.Encrypt(data)
+	vault.db.Write(encryptedData)
 }
