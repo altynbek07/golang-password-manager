@@ -33,7 +33,7 @@ A simple password manager written in Go.
     cp .env.example .env
     ```
 
-5. Set your secret key in the `.env` file:
+5. Set your secret key in the `.env` file (you can generate secret **Encryption key 256** and copy [here](https://acte.ltd/utils/randomkeygen)):
     ```env
     KEY=your_secret_key
     ```
